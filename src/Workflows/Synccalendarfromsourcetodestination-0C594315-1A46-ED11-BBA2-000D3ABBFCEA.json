@@ -1,0 +1,304 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_office365": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "svr__sharedoffice365_f448a"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      },
+      "shared_office365_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "svr__sharedoffice365_8681a"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      },
+      "shared_excelonlinebusiness": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "svr__sharedexcelonlinebusiness_df32f"
+        },
+        "api": {
+          "name": "shared_excelonlinebusiness"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_an_event_is_added,_updated_or_deleted_(V3)": {
+          "splitOn": "@triggerOutputs()?['body/value']",
+          "metadata": {
+            "operationMetadataId": "ac75114c-5535-48f7-8e9e-3dc20bb1a121"
+          },
+          "type": "OpenApiConnectionNotification",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_office365",
+              "operationId": "CalendarGetOnChangedItemsV3",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+            },
+            "parameters": {
+              "table": "AAMkADE5Y2Q3NzczLTk2NjItNDkyMy05ZDE5LTY0MTU5NzdlZTIwYgBGAAAAAABohqh_cGHXRo4kKzGHDqquBwAevKZEvRsuS76XzkjcseX7AAAAAAEGAAAevKZEvRsuS76XzkjcseX7AAAAAB0PAAA=",
+              "incomingDays": 300,
+              "pastDays": 0
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Event_is_added": {
+          "actions": {
+            "Skip_some_events": {
+              "actions": {},
+              "runAfter": {},
+              "else": {
+                "actions": {
+                  "Create_event_(V4)": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "e2139397-2fb0-41ff-b925-6462e2826cb2"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_office365_1",
+                        "operationId": "V4CalendarPostItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                      },
+                      "parameters": {
+                        "table": "AAMkADdjMWUxZDJkLWRlMDgtNGUyZi1iMjdjLTlhYmEyMDJjYzY1NABGAAAAAADSMVZI8ihISK0BjFhHEqHyBwCk2j5dk3kUTJ4a6UYdWc03AAAAAAEGAACk2j5dk3kUTJ4a6UYdWc03AAAAAFj0AAA=",
+                        "item/subject": "External - @{triggerOutputs()?['body/subject']}",
+                        "item/start": "@triggerOutputs()?['body/start']",
+                        "item/end": "@triggerOutputs()?['body/end']",
+                        "item/timeZone": "@triggerOutputs()?['body/timeZone']",
+                        "item/body": "<p>#external</p>",
+                        "item/isReminderOn": false,
+                        "item/showAs": "workingElsewhere"
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    },
+                    "description": "Not all properties are copied, policies might disallow copying other values. Change according"
+                  },
+                  "Add_a_row_into_a_table": {
+                    "runAfter": {
+                      "Create_event_(V4)": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "01T4ZQU2BJCQPJKVCCVVGI5NUN3LXKMSLP": "/event-concierge.xlsx",
+                      "operationMetadataId": "42cdce51-3d66-46bc-babd-48e8b6dde06e"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_excelonlinebusiness",
+                        "operationId": "AddRowV2",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness"
+                      },
+                      "parameters": {
+                        "source": "me",
+                        "drive": "b!2IXVVCTIAE60JNKKb9Iu26LoQZ9FRDhMktC12OY1sdi-GVB6MmsRRrm2GNI22E9c",
+                        "file": "01T4ZQU2BJCQPJKVCCVVGI5NUN3LXKMSLP",
+                        "table": "{6401C8A3-719C-43C3-9948-A84F7A5602DC}",
+                        "item/Source": "Account A",
+                        "item/Subject": "@triggerOutputs()?['body/subject']",
+                        "item/Start": "@triggerOutputs()?['body/start']",
+                        "item/End": "@triggerOutputs()?['body/start']",
+                        "item/Created At": "@triggerOutputs()?['body/createdDateTime']",
+                        "item/Id": "@triggerOutputs()?['body/id']",
+                        "item/External Id": "@outputs('Create_event_(V4)')?['body/id']"
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    },
+                    "description": "Save the Id of the original and the Id of the copy somewhere, Excel table in this case because it does not require a license"
+                  }
+                }
+              },
+              "expression": {
+                "or": [
+                  {
+                    "startsWith": [
+                      "@triggerOutputs()?['body/subject']",
+                      "External -"
+                    ]
+                  },
+                  {
+                    "contains": [
+                      "@triggerOutputs()?['body/body']",
+                      "#noCopy"
+                    ]
+                  },
+                  {
+                    "contains": [
+                      "@triggerOutputs()?['body/body']",
+                      "#external"
+                    ]
+                  }
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "c2f7349c-dea5-4a2b-9738-8c65698d2b5d"
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {},
+          "else": {
+            "actions": {
+              "Get_a_row": {
+                "runAfter": {},
+                "metadata": {
+                  "01T4ZQU2BJCQPJKVCCVVGI5NUN3LXKMSLP": "/event-concierge.xlsx",
+                  "operationMetadataId": "2efc2d50-237a-4c28-8580-7f0ba13f3a07"
+                },
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_excelonlinebusiness",
+                    "operationId": "GetItem",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness"
+                  },
+                  "parameters": {
+                    "source": "me",
+                    "drive": "b!2IXVVCTIAE60JNKKb9Iu26LoQZ9FRDhMktC12OY1sdi-GVB6MmsRRrm2GNI22E9c",
+                    "file": "01T4ZQU2BJCQPJKVCCVVGI5NUN3LXKMSLP",
+                    "table": "{6401C8A3-719C-43C3-9948-A84F7A5602DC}",
+                    "idColumn": "Id",
+                    "id": "@triggerOutputs()?['body/id']"
+                  },
+                  "authentication": "@parameters('$authentication')"
+                }
+              },
+              "Condition": {
+                "actions": {
+                  "Update_event_(V4)": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "435331ae-4bc6-458b-bfc0-45dcfb82a10a"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_office365_1",
+                        "operationId": "V4CalendarPatchItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                      },
+                      "parameters": {
+                        "table": "AAMkADdjMWUxZDJkLWRlMDgtNGUyZi1iMjdjLTlhYmEyMDJjYzY1NABGAAAAAADSMVZI8ihISK0BjFhHEqHyBwCk2j5dk3kUTJ4a6UYdWc03AAAAAAEGAACk2j5dk3kUTJ4a6UYdWc03AAAAAFj0AAA=",
+                        "id": "@outputs('Get_a_row')?['body/External Id']",
+                        "item/subject": "External - @{triggerOutputs()?['body/subject']}",
+                        "item/start": "@triggerOutputs()?['body/start']",
+                        "item/end": "@triggerOutputs()?['body/end']",
+                        "item/timeZone": "@triggerOutputs()?['body/timeZone']"
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    }
+                  }
+                },
+                "runAfter": {
+                  "Get_a_row": [
+                    "Succeeded"
+                  ]
+                },
+                "else": {
+                  "actions": {
+                    "Delete_event_(V2)": {
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "a988a6ab-13cd-436b-a9e8-5f3d157fa3ea"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_office365_1",
+                          "operationId": "CalendarDeleteItem_V2",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                        },
+                        "parameters": {
+                          "calendar": "AAMkADdjMWUxZDJkLWRlMDgtNGUyZi1iMjdjLTlhYmEyMDJjYzY1NABGAAAAAADSMVZI8ihISK0BjFhHEqHyBwCk2j5dk3kUTJ4a6UYdWc03AAAAAAEGAACk2j5dk3kUTJ4a6UYdWc03AAAAAFj0AAA=",
+                          "event": "@outputs('Get_a_row')?['body/External Id']"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      },
+                      "description": "Delete the event by ID saved earlier"
+                    },
+                    "Delete_a_row": {
+                      "runAfter": {
+                        "Delete_event_(V2)": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "01T4ZQU2BJCQPJKVCCVVGI5NUN3LXKMSLP": "/event-concierge.xlsx",
+                        "operationMetadataId": "ff9e1b42-c5f3-4075-b2fe-26ff37882500"
+                      },
+                      "type": "OpenApiConnection",
+                      "inputs": {
+                        "host": {
+                          "connectionName": "shared_excelonlinebusiness",
+                          "operationId": "DeleteItem",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness"
+                        },
+                        "parameters": {
+                          "source": "me",
+                          "drive": "b!2IXVVCTIAE60JNKKb9Iu26LoQZ9FRDhMktC12OY1sdi-GVB6MmsRRrm2GNI22E9c",
+                          "file": "01T4ZQU2BJCQPJKVCCVVGI5NUN3LXKMSLP",
+                          "table": "{6401C8A3-719C-43C3-9948-A84F7A5602DC}",
+                          "idColumn": "Id",
+                          "id": "@outputs('Get_a_row')?['body/Id']"
+                        },
+                        "authentication": "@parameters('$authentication')"
+                      },
+                      "description": "Delete the row from the Excel file"
+                    }
+                  }
+                },
+                "expression": {
+                  "equals": [
+                    "@triggerOutputs()?['body/ActionType']",
+                    "updated"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "f41edd71-31fc-4aa0-bc65-fb3af4a336ec"
+                },
+                "type": "If"
+              }
+            }
+          },
+          "expression": {
+            "equals": [
+              "@triggerOutputs()?['body/ActionType']",
+              "added"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c4d81fe1-8d3a-4d42-ab68-777a4bf57d9d"
+          },
+          "type": "If"
+        }
+      }
+    }
+  },
+  "schemaVersion": "1.0.0.0"
+}
